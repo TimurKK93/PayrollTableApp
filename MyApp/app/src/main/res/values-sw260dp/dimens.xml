@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="top_padding">35dp</dimen>
+    <dimen name="font">15sp</dimen>
+    <dimen name="font_title">13sp</dimen>
+    <dimen name="font_itog">15sp</dimen>
+    <dimen name="font_plan">13sp</dimen>
+    <dimen name="font_item">15sp</dimen>
+    <dimen name="width">100dp</dimen>
+    <dimen name="height">25dp</dimen>
+    <dimen name="table_height">414.4dp</dimen>
+</resources>

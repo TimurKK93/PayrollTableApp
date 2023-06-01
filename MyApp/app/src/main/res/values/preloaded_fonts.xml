@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/bebas_neue</item>
+        <item>@font/droid_serif</item>
+        <item>@font/khand_medium</item>
+        <item>@font/lato</item>
+        <item>@font/lato_bold</item>
+        <item>@font/oswald</item>
+        <item>@font/oswald_medium</item>
+        <item>@font/roboto</item>
+    </array>
+</resources>

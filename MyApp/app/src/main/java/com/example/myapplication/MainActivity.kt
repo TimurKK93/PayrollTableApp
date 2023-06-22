@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -16,14 +17,12 @@ import com.example.myapplication.databinding.ActivityMainBinding
 import com.google.android.material.tabs.TabLayout
 import java.util.*
 
-
-@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
     private val fragmentList = mutableListOf<TableFragment>()
-    private lateinit var tabIds: MutableList<String>
+    private lateinit var tabDataList: MutableList<Pair<String, String>>
     private lateinit var tabLayout: TabLayout
     private var currentPosition = 0
 
@@ -54,19 +53,20 @@ class MainActivity : AppCompatActivity() {
             addNewTab()
         }
         sharedPreferences = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
-        tabIds = mutableListOf()
+        tabDataList = mutableListOf()
 
         val tabCount = getTabCountFromSharedPreferences()
         if (tabCount == 0) {
             val initialFragmentKey = UUID.randomUUID().toString()
             addNewTab(initialFragmentKey)
             saveTabCountToSharedPreferences()
-            saveFragmentKeyToSharedPreferences(0, initialFragmentKey)
+            saveTabDataListToSharedPreferences()
         } else {
             for (i in 0 until tabCount) {
                 val fragmentKey = getFragmentKeyFromSharedPreferences(i)
-                if (fragmentKey != null) {
-                    addNewTab(fragmentKey)
+                val tabTitle = getTabTitleFromSharedPreferences(i)
+                if (fragmentKey != null && tabTitle != null) {
+                    addNewTab(fragmentKey, tabTitle)
                 }
             }
         }
@@ -79,16 +79,16 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
-    private fun addNewTab(fragmentKey: String? = null) {
+    private fun addNewTab(fragmentKey: String? = null, tabTitle: String? = null) {
         val newFragment = TableFragment()
         if (fragmentList.isEmpty()) {
             addFragment(newFragment)
-            addTabToTabLayout(0)
+            addTabToTabLayout(tabTitle ?: "Таблица")
             showSelectedFragment(0)
         } else {
             currentPosition = fragmentList.size
             addFragment(newFragment)
-            addTabToTabLayout(currentPosition)
+            addTabToTabLayout(tabTitle ?: "Таблица")
             showSelectedFragment(currentPosition)
             tabLayout.selectTab(tabLayout.getTabAt(currentPosition))
         }
@@ -97,23 +97,21 @@ class MainActivity : AppCompatActivity() {
             tabLayout.setScrollPosition(fragmentList.size - 1, 0f, true)
         }
 
-
         val newFragmentKey = fragmentKey ?: UUID.randomUUID().toString()
         newFragment.arguments = Bundle().apply {
             putString("key", newFragmentKey)
         }
-        tabIds.add(newFragmentKey)
+        tabDataList.add(Pair(newFragmentKey, tabTitle ?: "Таблица"))
         saveTabCountToSharedPreferences()
-        saveTabIdsToSharedPreferences()
+        saveTabDataListToSharedPreferences()
 
-//Передаю ключ для сохранения данных фрагемнта в Fragment
-
+        // Передаю ключ для сохранения данных фрагмента в Fragment
         newFragment.setFragmentKeys(newFragment.arguments)
     }
 
-    private fun addTabToTabLayout(position: Int) {
+    private fun addTabToTabLayout(tabTitle: String) {
         val tab = tabLayout.newTab()
-        tab.text = "Таблица${position + 1}"
+        tab.text = tabTitle
         tabLayout.addTab(tab)
     }
 
@@ -128,7 +126,7 @@ class MainActivity : AppCompatActivity() {
         val currentTab = tabLayout.getTabAt(position)
         val currentTitle = currentTab?.text.toString()
 
-        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        val builder = AlertDialog.Builder(this)
         builder.setTitle("Переименовать таблицу")
 
         val input = EditText(this)
@@ -138,6 +136,15 @@ class MainActivity : AppCompatActivity() {
         builder.setPositiveButton("ОК") { dialog, _ ->
             val newTitle = input.text.toString()
             currentTab?.text = newTitle
+            val fragmentKey = fragmentList[position].arguments?.getString("key")
+            if (fragmentKey != null) {
+                val pair = tabDataList.find { it.first == fragmentKey }
+                if (pair != null) {
+                    tabDataList.remove(pair)
+                    tabDataList.add(position, Pair(fragmentKey, newTitle))
+                    saveTabDataListToSharedPreferences()
+                }
+            }
             dialog.dismiss()
         }
 
@@ -149,35 +156,32 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-
     private fun removeTab(position: Int) {
         if (position >= 0 && position < fragmentList.size) {
-            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-//            builder.setTitle("Предупреждение")
-            builder.setMessage("Таблица удалится без возможности восстановления. Продолжить?")
+            val builder = AlertDialog.Builder(this)
+            builder.setMessage("Таблица будет удалена без возможности восстановления. Продолжить?")
             builder.setPositiveButton("Удалить") { dialog, _ ->
-
                 val fragmentToRemove = fragmentList[position]
                 val fragmentKey = fragmentToRemove.arguments?.getString("key")
+
+                // Удаление вкладки из списка и обновление TabLayout
                 fragmentList.removeAt(position)
-                supportFragmentManager.beginTransaction()
-                    .remove(fragmentToRemove)
-                    .commit()
                 tabLayout.removeTabAt(position)
 
-                removeTabIdFromSharedPreferences(fragmentKey)
-
-                // Обновляем текущую позицию вкладки
-                if (currentPosition == position) {
-                    // Если удаляется текущая вкладка, переключаемся на предыдущую
-                    currentPosition = position - 1
-                    if (currentPosition < 0) {
-                        currentPosition = 0
-                    }
-                } else if (currentPosition > position) {
-                    // Если удалена вкладка перед текущей, обновляем текущую позицию
-                    currentPosition -= 1
+                fragmentKey?.let {
+                    // Удаление данных вкладки из tabDataList и SharedPreferences
+                    removeTabDataByFragmentKey(fragmentKey)
                 }
+
+                // Показать предыдущую вкладку после удаления текущей вкладки
+                currentPosition = if (currentPosition == position) {
+                    if (currentPosition > 0) currentPosition - 1 else 0
+                } else {
+                    currentPosition
+                }
+
+                // Переключение на выбранную вкладку
+                showSelectedFragment(currentPosition)
 
                 dialog.dismiss()
             }
@@ -191,25 +195,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveTabCountToSharedPreferences() {
-        val editor = sharedPreferences.edit()
-        editor.putInt("tabCount", tabIds.size)
-        editor.apply()
+
+    private fun removeTabDataByFragmentKey(fragmentKey: String) {
+        val index = tabDataList.indexOfFirst { it.first == fragmentKey }
+        if (index != -1) {
+            tabDataList.removeAt(index)
+            saveTabDataListToSharedPreferences()
+        }
     }
 
-    private fun saveTabIdsToSharedPreferences() {
+    private fun saveTabDataListToSharedPreferences() {
         val editor = sharedPreferences.edit()
-        for (i in tabIds.indices) {
-            editor.putString("tabKey$i", tabIds[i])
+        editor.putInt("tabCount", tabDataList.size)
+        for (i in tabDataList.indices) {
+            val fragmentKey = tabDataList[i].first
+            val tabTitle = tabDataList[i].second
+            editor.putString("tabKey$i", fragmentKey)
+            editor.putString("tabTitle$i", tabTitle)
+            editor.putInt("tabOrder$i", i)
         }
         editor.apply()
     }
 
-    private fun saveFragmentKeyToSharedPreferences(index: Int, fragmentKey: String) {
+    private fun saveTabCountToSharedPreferences() {
         val editor = sharedPreferences.edit()
-        editor.putString("tabKey$index", fragmentKey)
+        editor.putInt("tabCount", tabDataList.size)
         editor.apply()
     }
+
 
     private fun getTabCountFromSharedPreferences(): Int {
         return sharedPreferences.getInt("tabCount", 0)
@@ -219,30 +232,8 @@ class MainActivity : AppCompatActivity() {
         return sharedPreferences.getString("tabKey$index", null)
     }
 
-    private fun removeTabIdFromSharedPreferences(fragmentKey: String?) {
-        fragmentKey?.let {
-            val editor = sharedPreferences.edit()
-            val index = tabIds.indexOf(fragmentKey)
-            if (index != -1) {
-                editor.remove("tabKey$index")
-                tabIds.removeAt(index)
-
-                // Обновляем порядковые номера идентификаторов вкладок
-                for (i in index until tabIds.size) {
-                    val oldKey = "tabKey${i + 1}"
-                    val newKey = "tabKey$i"
-                    val value = sharedPreferences.getString(oldKey, null)
-                    if (value != null) {
-                        editor.putString(newKey, value)
-                    }
-                    editor.remove(oldKey)
-                }
-
-                saveTabIdsToSharedPreferences()
-                saveTabCountToSharedPreferences()
-            }
-            editor.apply()
-        }
+    private fun getTabTitleFromSharedPreferences(index: Int): String? {
+        return sharedPreferences.getString("tabTitle$index", null)
     }
 
 
@@ -251,9 +242,9 @@ class MainActivity : AppCompatActivity() {
         popupMenu.inflate(R.menu.menu_popup)
 
         val deleteMenuItem = popupMenu.menu.findItem(R.id.menu_delete)
-        deleteMenuItem.isEnabled = fragmentList.size > 1
+        deleteMenuItem.isEnabled = tabDataList.size > 1
 
-        if (fragmentList.size == 1)
+        if (tabDataList.size == 1)
             deleteMenuItem.icon?.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
 
         popupMenu.setOnMenuItemClickListener { menuItem ->
@@ -272,8 +263,3 @@ class MainActivity : AppCompatActivity() {
         popupMenu.show()
     }
 }
-
-
-
-
-

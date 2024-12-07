@@ -1343,7 +1343,7 @@
                         <EditText
                             android:id="@+id/editTextTextPersonName32"
                             android:layout_width="@dimen/width"
-                            android:layout_height="@dimen/height"
+                            android:layout_height="match_parent"
                             android:layout_marginLeft="0.9dp"
                             android:layout_marginBottom="0.9dp"
                             android:background="#FFFFFF"
@@ -1817,18 +1817,6 @@
         tools:ignore="MissingConstraints" />
 
     <TextView
-        android:id="@+id/work_plan"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:fontFamily="sans-serif-medium"
-        android:textColor="@color/black"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@+id/textView5"
-        app:layout_constraintTop_toBottomOf="@+id/textView5"
-        tools:ignore="MissingConstraints" />
-
-    <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -1849,12 +1837,12 @@
 
     <Button
         android:id="@+id/clearBtn"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:text="У"
-        app:layout_constraintBottom_toBottomOf="@+id/textView3"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="очистить"
+        android:textSize="10sp"
         app:layout_constraintEnd_toEndOf="@+id/scrollView"
-        app:layout_constraintTop_toTopOf="@+id/textView3"
+        app:layout_constraintTop_toBottomOf="@+id/textView5"
         tools:ignore="MissingConstraints" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

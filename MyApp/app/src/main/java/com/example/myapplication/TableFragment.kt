@@ -143,32 +143,22 @@ class TableFragment : Fragment() {
 //----------------------------------------Убираем лишний час если указанно больше непрофиля----------------------------------
 
         if ((columnOne.sum() != 0) && (columnTwo.sum() != 0)) {
-            if (columnOne.sum() / columnTwo.sum() >= 80) {
+            if (columnOne.sum() / columnTwo.sum() >= 80) { // 80 - это план в час(не почасовая оплата)
                 salaryText =
-                    (((columnOne.sum() * 2 + columnTwo.sum() * 80 + columnThree.sum() * 180 - meter * 80) * 1.2 * 0.13).roundToInt())
+                    (((columnOne.sum() * 2.2 + columnTwo.sum() * 110 + columnThree.sum() * 210 - meter * 110) * 1.2 * 0.13).roundToInt())
                 salaryPercent =
-                    ((((columnOne.sum() * 2 + columnTwo.sum() * 80 + columnThree.sum() * 180 - meter * 80) * 1.2) - salaryText).roundToInt())
+                    ((((columnOne.sum() * 2.2 + columnTwo.sum() * 110 + columnThree.sum() * 210 - meter * 110) * 1.2) - salaryText).roundToInt())
             } else {
                 salaryText =
-                    (((columnOne.sum() * 1.8) + columnTwo.sum() * 80 + columnThree.sum() * 180 - meter * 80) * 1.2 * 0.13).roundToInt()
+                    (((columnOne.sum() * 2) + columnTwo.sum() * 110 + columnThree.sum() * 210 - meter * 110) * 1.2 * 0.13).roundToInt()
                 salaryPercent =
-                    ((((columnOne.sum() * 1.8) + columnTwo.sum() * 80 + columnThree.sum() * 180 - meter * 80) * 1.2) - salaryText).roundToInt()
+                    ((((columnOne.sum() * 2) + columnTwo.sum() * 110 + columnThree.sum() * 210 - meter * 110) * 1.2) - salaryText).roundToInt()
             }
-            if (columnOne.sum() / columnTwo.sum() >= 80) {
-                binding.workPlan.text =
-                    "Опережаете план на ${columnOne.sum() - columnTwo.sum() * 80} позиций."
-            } else {
-                binding.workPlan.text =
-                    "Отстаете от плана на ${columnTwo.sum() * 80 - columnOne.sum()} позиций."
-            }
-
 
         } else {
-            salaryText = ((columnThree.sum() * 180 - meter * 80) * 1.2 * 0.13).roundToInt()
+            salaryText = ((columnThree.sum() * 210 - meter * 110) * 1.2 * 0.13).roundToInt()
             salaryPercent =
-                (((columnThree.sum() * 180 - meter * 80) * 1.2) - salaryText).roundToInt()
-
-            binding.workPlan.text = ""
+                (((columnThree.sum() * 210 - meter * 110) * 1.2) - salaryText).roundToInt()
         }
 
         salary = salaryPercent
@@ -221,7 +211,6 @@ class TableFragment : Fragment() {
                     binding.textView16.text = "0 ч."
                     binding.textView11.text = "0 ч."
                     binding.textView3.text = "Cмен: 0"
-                    binding.workPlan.text = ""
                     binding.textView5.text = "Среднее: 0"
                     binding.textView4.text = "Заработано: 0 ₽"
 
